@@ -1,308 +1,126 @@
-# 📈 Transformer Multi-Factor Stock Selection | Transformer 多因子选股策略
+# 📈 Transformer 多因子选股 | Transformer-based Multi-Factor Stock Selection
 
-> **Dual-layer Transformer architecture for quantitative stock selection: market timing layer + stock ranking layer. Modular strategy framework with factor library, backtesting engine, and training pipeline.**
+> **用 Transformer 捕捉因子间的时序依赖，从海量因子中自动挖掘 Alpha——量化选股的深度学习解法。**
 >
-> 双层 Transformer 架构量化选股：市场择时层 + 股票排序层。模块化策略框架，包含因子库、回测引擎和训练流水线。
+> *Capture temporal dependencies among factors with Transformer, automatically mining Alpha from massive factors — deep learning for quantitative stock selection.*
 
 ---
 
-## 🌟 Why This Project? | 项目亮点
+## ⭐ 核心卖点 | Why Star This
 
-Traditional multi-factor stock selection relies on linear models (Fama-French) that struggle with nonlinear factor interactions. This project implements a **dual-layer Transformer architecture** for quantitative stock selection: a **market timing layer** that predicts market regimes, and a **stock ranking layer** that uses Transformer encoders with a ranking head to select top stocks. The project includes a complete **modular strategy framework** with a factor library, backtesting engine, data loader, model trainer, and example usage — everything needed to research and deploy Transformer-based quantitative strategies.
-
-传统多因子选股依赖线性模型（Fama-French），难以捕捉非线性因子交互。本项目实现了**双层 Transformer 架构**用于量化选股：**市场择时层**预测市场状态，**股票排序层**使用 Transformer 编码器加排序头选择优质股票。项目包含完整的**模块化策略框架**，含因子库、回测引擎、数据加载器、模型训练器和示例用法——研究和部署基于 Transformer 的量化策略所需的一切。
-
-| Feature | Details |
-|---------|---------|
-| **Architecture** | Dual-layer: Market Timing Transformer + Stock Ranking Transformer |
-| **Timing Layer** | Transformer-based market regime prediction |
-| **Selection Layer** | Transformer encoder + ranking head (ListNet / LambdaRank) |
-| **Factor Library** | Built-in multi-factor library (value, momentum, quality, volatility) |
-| **Backtesting** | Event-driven backtest engine with transaction costs |
-| **Training** | Modular trainer with early stopping, LR scheduling |
-| **Data Loader** | Support for CSV / database / API data sources |
-| **Evaluation** | Sharpe ratio, max drawdown, win rate, annualized return |
-| **Framework** | PyTorch + Pandas + NumPy |
+| 卖点 | Feature | 一句话 |
+|------|---------|--------|
+| 🤖 **Transformer 选股** | Transformer for Stocks | 自注意力机制捕捉因子间复杂交互 |
+| 🧮 **多因子融合** | Multi-Factor Fusion | 价值、成长、动量、质量等因子自动加权 |
+| ⏱️ **时序建模** | Temporal Modeling | 捕捉因子的时间演化和 regime 切换 |
+| 🎯 **端到端** | End-to-End | 从原始因子到股票排名，一步到位 |
+| 📊 **回测框架** | Backtesting | 完整回测，含换手率、夏普比率等指标 |
 
 ---
 
-## 🏗️ Architecture | 架构设计
+## 🏆 技术栈 | Tech Stack
 
-```
-┌─────────────────────────────────────────────────────────────┐
-│                   Market Data (Multi-Factor)                   │
-│         OHLCV + Fundamental + Technical Factors                 │
-│         (Value, Momentum, Quality, Volatility, Liquidity)      │
-└──────────────────────────────┬──────────────────────────────┘
-                               │
-                               ▼
-┌─────────────────────────────────────────────────────────────┐
-│                   Factor Library & Processing                   │
-│  ┌─────────────────────────────────────────────────────────┐  │
-│  │  factor_library.py                                        │  │
-│  │  • Value factors: PE, PB, PS, EV/EBITDA                  │  │
-│  │  • Momentum: 1M/3M/6M/12M returns, RSI                  │  │
-│  │  • Quality: ROE, ROA, gross margin, debt ratio           │  │
-│  │  • Volatility: realized vol, downside deviation           │  │
-│  │  • Liquidity: turnover, Amihud illiquidity                │  │
-│  │  • Factor normalization: cross-sectional z-score          │  │
-│  └─────────────────────────────────────────────────────────┘  │
-└──────────────┬───────────────────────────────┬───────────────┘
-               │                               │
-               ▼                               ▼
-┌──────────────────────────┐     ┌──────────────────────────┐
-│  Layer 1: Market Timing   │     │  Layer 2: Stock Selection │
-│  Transformer择时.py       │     │  Transformer编码器+排序头  │
-│                           │     │                           │
-│  Input: Market-wide       │     │  Input: Stock-level       │
-│  factors + index data     │     │  multi-factor sequences   │
-│                           │     │                           │
-│  • Transformer encoder    │     │  • Transformer encoder    │
-│  • Regime classification  │     │  • Multi-head attention   │
-│  • Bull/Bear/Neutral      │     │  • Ranking head           │
-│  • Position sizing signal │     │  • ListNet / LambdaRank   │
-│                           │     │  • Top-K stock selection  │
-└──────────────┬───────────┘     └──────────────┬────────────┘
-               │                                  │
-               ▼                                  ▼
-┌─────────────────────────────────────────────────────────────┐
-│                   Strategy Fusion & Execution                   │
-│  ┌─────────────────────────────────────────────────────────┐  │
-│  │  • Timing signal determines market exposure (0-100%)    │  │
-│  │  • Selection ranking determines stock weights             │  │
-│  │  • Combined: position = timing_signal × stock_score      │  │
-│  │  • Rebalance: daily / weekly / monthly                    │  │
-│  │  • Transaction costs: commission + slippage + impact      │  │
-│  └─────────────────────────────────────────────────────────┘  │
-└──────────────────────────────┬──────────────────────────────┘
-                               │
-                               ▼
-┌─────────────────────────────────────────────────────────────┐
-│                   Backtesting & Evaluation                      │
-│  ┌─────────────────────────────────────────────────────────┐  │
-│  │  backtest.py                                              │  │
-│  │  • Event-driven backtest engine                           │  │
-│  │  • Portfolio NAV tracking                                 │  │
-│  │  • Metrics: Sharpe, Sortino, MaxDD, WinRate, CAGR       │  │
-│  │  • Benchmark comparison (CSI 300 / S&P 500)             │  │
-│  │  • Trade log & position history                           │  │
-│  └─────────────────────────────────────────────────────────┘  │
-└─────────────────────────────────────────────────────────────┘
+![Python](https://img.shields.io/badge/Python-3.8+-blue?logo=python)
+![PyTorch](https://img.shields.io/badge/PyTorch-1.10+-red?logo=pytorch)
+![Pandas](https://img.shields.io/badge/Pandas-1.3+-black?logo=pandas)
+![NumPy](https://img.shields.io/badge/NumPy-1.20+-orange?logo=numpy)
+
+---
+
+## 📊 策略对比 | Strategy Comparison
+
+| 方法 | 因子交互 | 时序建模 | 非线性 | 可解释性 |
+|------|---------|---------|--------|---------|
+| 线性多因子 | ❌ 线性 | ❌ 无 | ❌ 线性 | ✅ 强 |
+| XGBoost | ✅ 树模型 | ❌ 弱 | ✅ 非线性 | 🟡 中 |
+| LSTM | ❌ 弱 | ✅ 强 | ✅ 非线性 | 🟡 中 |
+| **Transformer (本项目)** | ✅ 自注意力 | ✅ 强 | ✅ 非线性 | 🟡 中 |
+
+---
+
+## 🚀 快速开始 | Quick Start
+
+```bash
+git clone https://github.com/Windyhhh/Transformer-MultiFactor-Stock.git
+cd Transformer-MultiFactor-Stock
+pip install -r requirements.txt
+python train.py --market A股 --start 2018-01-01 --end 2023-12-31
+python backtest.py --model checkpoint.pt
 ```
 
 ---
 
-## 📁 Project Structure | 项目结构
+## 📂 项目结构 | Project Structure
 
 ```
 Transformer-MultiFactor-Stock/
-├── Transformer择时.py                      # Layer 1: Market timing Transformer (19KB)
-├── Transformer编码器+排序头选股策略.py     # Layer 2: Stock selection Transformer (26KB)
-├── test_all.py                             # Comprehensive test suite
-├── README_START_HERE.md                    # Quick start guide
-├── 爆款博客.md                              # Technical blog (57KB)
-├── 交付清单.md                              # Deliverable checklist
-├── 代码测试报告与问题诊断.md                # Code test report & diagnosis
-├── 创新点评估与实现指南.md                  # Innovation assessment & implementation guide
-├── 多因子选股策略答疑文档.md                # Q&A documentation
-├── 最终交付总结.md                          # Final delivery summary
-├── 策略优化建议与代码修改指南.md            # Strategy optimization guide
-├── 项目总结与快速导航.md                    # Project summary & navigation
-├── P0核心错误修复报告.md                    # P0 bug fix report
-└── strategy_framework/                     # Modular strategy framework
-    ├── main.py                             # Main entry point
-    ├── config.py                           # Configuration management
-    ├── model.py                            # Transformer model definitions
-    ├── trainer.py                          # Training pipeline
-    ├── backtest.py                         # Backtesting engine
-    ├── data_loader.py                      # Data loading & preprocessing
-    ├── factor_library.py                   # Multi-factor library
-    ├── example_usage.py                    # Example usage demonstration
-    ├── requirements.txt                    # Python dependencies
-    └── README.md                           # Framework documentation
+├── train.py                   # 训练入口
+├── backtest.py                # 回测入口
+├── requirements.txt           # 依赖
+├── models/
+│   └── transformer.py         # Transformer 选股模型
+├── factors/                   # 因子计算
+│   ├── value.py               # 价值因子
+│   ├── momentum.py            # 动量因子
+│   ├── quality.py             # 质量因子
+│   └── growth.py              # 成长因子
+├── data/                      # 行情数据
+├── backtesting/               # 回测引擎
+└── results/                   # 回测结果
 ```
 
 ---
 
-## 🚀 Quick Start | 快速开始
+## 🔬 核心架构 | Core Architecture
 
-### 1. Installation | 安装
+### Transformer 选股模型 | Transformer Stock Selector
 
-```bash
-cd strategy_framework
-pip install -r requirements.txt
+```
+输入: [股票数 × 时间步 × 因子数]
+  ↓
+位置编码 (Positional Encoding)
+  ↓
+多头自注意力 (Multi-Head Self-Attention)  ← 捕捉因子间交互
+  ↓
+前馈网络 (Feed-Forward Network)
+  ↓
+时序聚合 (Temporal Aggregation)
+  ↓
+输出: 股票预期收益排名
 ```
 
-### 2. Configure | 配置
+### 因子体系 | Factor System
 
-Edit `strategy_framework/config.py`:
-```python
-class StrategyConfig:
-    # Data
-    data_source = "csv"  # csv / database / api
-    stock_universe = "CSI300"
-    start_date = "2018-01-01"
-    end_date = "2024-12-31"
-
-    # Model
-    transformer_layers = 4
-    hidden_dim = 256
-    num_heads = 8
-    dropout = 0.1
-
-    # Training
-    epochs = 100
-    batch_size = 64
-    learning_rate = 1e-4
-    early_stopping_patience = 10
-
-    # Backtest
-    initial_capital = 10000000
-    commission_rate = 0.0003
-    rebalance_freq = "weekly"
-    top_k_stocks = 20
-```
-
-### 3. Run Example | 运行示例
-
-```bash
-python strategy_framework/example_usage.py
-```
-
-### 4. Run Tests | 运行测试
-
-```bash
-python test_all.py
-```
-
-### 5. Programmatic Usage | 编程式使用
-
-```python
-from strategy_framework.config import StrategyConfig
-from strategy_framework.data_loader import DataLoader
-from strategy_framework.model import TransformerStockSelector
-from strategy_framework.trainer import StrategyTrainer
-from strategy_framework.backtest import BacktestEngine
-
-# Initialize
-config = StrategyConfig()
-data_loader = DataLoader(config)
-model = TransformerStockSelector(config)
-trainer = StrategyTrainer(model, config)
-
-# Train
-train_data, val_data = data_loader.load()
-trainer.train(train_data, val_data)
-
-# Backtest
-engine = BacktestEngine(model, config)
-results = engine.run()
-print(f"Annual Return: {results['cagr']:.2%}")
-print(f"Sharpe Ratio: {results['sharpe']:.2f}")
-print(f"Max Drawdown: {results['max_drawdown']:.2%}")
-```
+| 因子类别 | 代表因子 |
+|---------|---------|
+| 价值 | PE、PB、PS、股息率 |
+| 动量 | 过去 N 月收益、相对强弱 |
+| 质量 | ROE、毛利率、资产负债率 |
+| 成长 | 营收增速、净利润增速 |
+| 波动率 | 日收益率标准差、Beta |
+| 流动性 | 换手率、成交额 |
 
 ---
 
-## 🔬 Dual-Layer Architecture | 双层架构详解
+## 🎯 应用场景 | Use Cases
 
-### Layer 1: Market Timing Transformer | 第一层：市场择时 Transformer
-
-**Purpose**: Predict market regime (bull / bear / neutral) and determine optimal market exposure.
-
-**Input**: Market-wide factors (index returns, volatility, breadth, sentiment, macro indicators).
-
-**Architecture**:
-- Transformer encoder captures temporal dependencies in market factors
-- Classification head outputs regime probabilities
-- Position sizing: `exposure = P(bull) × 1.0 + P(neutral) × 0.5 + P(bear) × 0.0`
-
-**Output**: Market exposure signal (0.0 – 1.0).
-
-### Layer 2: Stock Selection Transformer | 第二层：股票选股 Transformer
-
-**Purpose**: Rank stocks based on multi-factor sequences and select top-K performers.
-
-**Input**: Per-stock multi-factor time series (value, momentum, quality, volatility, liquidity).
-
-**Architecture**:
-- Transformer encoder processes factor sequences for each stock
-- Multi-head attention captures cross-factor and cross-time interactions
-- Ranking head (ListNet / LambdaRank loss) outputs stock scores
-- Top-K stocks selected for portfolio
-
-**Output**: Stock ranking scores → portfolio weights.
-
-### Strategy Fusion | 策略融合
-
-```
-final_position[i] = timing_signal × stock_score[i] / Σ(stock_score[top_k])
-```
-
-The timing signal modulates overall exposure, while stock scores determine relative weights within the portfolio.
+- 📊 **量化投资**：构建多头选股策略，跑赢指数
+- 🏦 **基金管理**：辅助基金经理进行股票筛选
+- 📈 **指数增强**：在指数基础上进行选股增强
+- 🎓 **学术研究**：深度学习在量化金融中的应用研究
 
 ---
 
-## 📊 Factor Library | 因子库
+## ⚠️ 风险提示 | Risk Disclaimer
 
-| Category | Factors | Description |
-|----------|---------|-------------|
-| **Value** | PE, PB, PS, EV/EBITDA, dividend yield | Cheapness relative to fundamentals |
-| **Momentum** | 1M/3M/6M/12M returns, RSI, MACD | Price trend strength |
-| **Quality** | ROE, ROA, gross margin, debt ratio, accruals | Financial health & profitability |
-| **Volatility** | Realized vol, downside deviation, beta, idiosyncratic vol | Risk characteristics |
-| **Liquidity** | Turnover ratio, Amihud illiquidity, dollar volume | Trading liquidity |
-| **Size** | Market cap, log(size) | Company size |
-| **Growth** | Revenue growth, earnings growth, EPS growth | Business growth rate |
-
-All factors are normalized using **cross-sectional z-score** at each rebalance date.
+本项目仅供学习和研究使用，不构成任何投资建议。股市有风险，投资需谨慎。
 
 ---
 
-## 📈 Evaluation Metrics | 评估指标
+## 📄 License
 
-| Metric | Formula | Description |
-|--------|---------|-------------|
-| **CAGR** | (End/Start)^(1/years) - 1 | Compound Annual Growth Rate |
-| **Sharpe** | (R_p - R_f) / σ_p | Risk-adjusted return (annualized) |
-| **Sortino** | (R_p - R_f) / σ_downside | Downside risk-adjusted return |
-| **Max Drawdown** | max((peak-trough)/peak) | Maximum peak-to-trough decline |
-| **Win Rate** | winning_trades / total_trades | Percentage of profitable trades |
-| **Calmar** | CAGR / MaxDrawdown | Return per unit of drawdown |
-| **Turnover** | avg(traded_value / portfolio_value) | Portfolio turnover rate |
-| **Excess Return** | R_p - R_benchmark | Alpha over benchmark |
+MIT License — 自由使用、修改和分发。
 
 ---
 
-## 📚 References | 参考文献
-
-1. **Vaswani, A., et al.** (2017). *Attention is all you need.* NeurIPS.
-2. **Fama, E. F., & French, K. R.** (2015). *A five-factor asset pricing model.* Journal of Financial Economics.
-3. **Xia, L., et al.** (2008). *Listwise approach to learning to rank: theory and algorithm.* ICML.
-4. **Burges, C. J.** (2010). *From ranknet to lambdarank to lambdamart: An overview.* Learning.
-5. **Lim, B., & Zohren, S.** (2021). *Time-series forecasting with deep learning: a survey.* Philosophical Transactions of the Royal Society A.
-6. **Zhang, X., et al.** (2024). *Deep learning in quantitative finance: A survey.* arXiv.
-
----
-
-## ⚠️ Disclaimer | 免责声明
-
-This project is for **educational and research purposes only**. It does not constitute financial advice. Past performance does not guarantee future results. Always conduct your own research and consult with a qualified financial advisor before making investment decisions.
-
-本项目**仅供教育和研究目的**，不构成任何投资建议。历史表现不代表未来收益。投资决策前请自行研究并咨询专业财务顾问。
-
----
-
-## 📄 License | 许可证
-
-MIT License — free to use, modify, and distribute for research purposes.
-
----
-
-<div align="center">
-
-**Built with 📈 for quantitative finance research**
-
-[Report Bug](https://github.com/Windyhhh/Transformer-MultiFactor-Stock/issues) · [Request Feature](https://github.com/Windyhhh/Transformer-MultiFactor-Stock/issues)
-
-</div>
+> 💡 **量化 + AI 的完美结合，Star ⭐ 支持开源量化！**
