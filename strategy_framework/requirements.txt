@@ -1,0 +1,26 @@
+# 深度学习框架
+torch>=2.0.0
+torchvision>=0.15.0
+
+# 数据处理
+pandas>=1.5.0
+numpy>=1.23.0
+scipy>=1.10.0
+
+# 数据源
+tushare>=1.2.89
+akshare>=1.10.0
+
+# 可视化
+matplotlib>=3.7.0
+seaborn>=0.12.0
+plotly>=5.14.0
+
+# 工具库
+tqdm>=4.65.0
+scikit-learn>=1.2.0
+
+# 可选：量化平台
+# jqdatasdk  # 聚宽数据
+# rqdatac    # 米筐数据
+
