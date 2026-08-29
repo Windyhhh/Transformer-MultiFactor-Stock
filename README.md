@@ -1,6 +1,6 @@
 <div align="center">
 
-# 📈 Transformer-MultiFactor-Stock
+# 多因子选股 | Transformer-MultiFactor-Stock
 
 ### Two-layer Transformer multi-factor stock selection.
 
